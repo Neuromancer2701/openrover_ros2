@@ -9,7 +9,10 @@ docker setup instructions
 
 docker build -t ros-dev .
 
-docker run -v /home/seth/repos/ROS_2_VESC_Node:/ros_ws -td --device=/dev/input/js0 --cap-add sys_ptrace -p127.0.0.1:2222:22 --name clion_remote_env ros-dev
+Add for ps4 controller
+--device=/dev/input/js0
+
+docker run -v /home/countzero/repos/openrover_ros2:/ros_ws -td  --cap-add sys_ptrace -p127.0.0.1:2222:22 --name clion_remote_env ros-dev
 
 sudo chmod a+rw /dev/input/js0
 
