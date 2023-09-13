@@ -1,9 +1,5 @@
-cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.16)
 project(libserial_vendor)
-
-if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  add_compile_options(-Wall -Wextra -Wpedantic)
-endif()
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
@@ -11,5 +7,9 @@ find_package(ament_cmake REQUIRED)
 # further dependencies manually.
 # find_package(<dependency> REQUIRED)
 
+add_subdirectory(libserial-1.0)
+
+#ament_export_include_directories(${DOCOPT_INCLUDE_DIRS})
+ament_export_libraries(libserial)
 
 ament_package()
