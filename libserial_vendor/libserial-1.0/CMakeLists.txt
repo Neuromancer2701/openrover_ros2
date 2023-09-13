@@ -14,21 +14,21 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.5)
 #
 PROJECT(LibSerial LANGUAGES C CXX VERSION 1.0.0)
 
-option(LIBSERIAL_ENABLE_TESTING "Enables building unit tests" ON)
-option(LIBSERIAL_BUILD_EXAMPLES "Enables building example programs" ON)
-option(LIBSERIAL_PYTHON_ENABLE "Enables building the library with Python SIP bindings" ON)
-option(LIBSERIAL_BUILD_DOCS "Build the Doxygen docs" ON)
+option(LIBSERIAL_ENABLE_TESTING "Enables building unit tests" OFF)
+option(LIBSERIAL_BUILD_EXAMPLES "Enables building example programs" OFF)
+option(LIBSERIAL_PYTHON_ENABLE "Enables building the library with Python SIP bindings" OFF)
+option(LIBSERIAL_BUILD_DOCS "Build the Doxygen docs" OFF)
 
 #
 # Project specific options and variables
 #
-OPTION(INSTALL_STATIC "Install static library." ON)
+OPTION(INSTALL_STATIC "Install static library." OFF)
 OPTION(INSTALL_SHARED "Install shared object library." ON)
 
 #
 # LibSerial requies a C++ compiler that supports at least C++14 standard
 #
-SET(CMAKE_CXX_STANDARD 14)
+SET(CMAKE_CXX_STANDARD 17)
 SET(CMAKE_STANDARD_REQUIRES ON)
 
 INCLUDE(ExternalProject)
@@ -97,7 +97,7 @@ ADD_DEFINITIONS(
   -Wpointer-arith
   -Wunused-local-typedefs
   -Wwrite-strings
-
+  -Wno-maybe-uninitialized
   -fstrict-aliasing
   -fno-check-new
   -fno-common
@@ -166,13 +166,13 @@ endif()
 #
 # Create pkg-config file for cmake builds as well as autotool builds
 #
-set(prefix ${CMAKE_INSTALL_PREFIX})
-set(exec_prefix ${CMAKE_INSTALL_PREFIX})
-set(libdir ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR})
-set(includedir ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR})
-set(VERSION ${PROJECT_VERSION})
-configure_file(libserial.pc.in libserial.pc @ONLY)
-install(FILES ${CMAKE_BINARY_DIR}/libserial.pc DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/pkgconfig)
+#set(prefix ${CMAKE_INSTALL_PREFIX})
+#set(exec_prefix ${CMAKE_INSTALL_PREFIX})
+#set(libdir ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR})
+#set(includedir ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR})
+#set(VERSION ${PROJECT_VERSION})
+#configure_file(libserial.pc.in libserial.pc @ONLY)
+#install(FILES ${CMAKE_BINARY_DIR}/libserial.pc DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/pkgconfig)
 
 if (LIBSERIAL_BUILD_DOCS)
   CONFIGURE_FILE(
@@ -190,6 +190,6 @@ endif()
 #
 # Packaging support
 #
-if (CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
-    add_subdirectory(packaging)
-endif()
+#if (CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+#    add_subdirectory(packaging)
+#endif()

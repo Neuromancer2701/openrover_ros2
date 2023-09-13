@@ -10,6 +10,10 @@ RUN apt-get update \
       clang \
       cmake \
       rsync \
+      autogen autoconf build-essential cmake graphviz \
+      libboost-dev libboost-test-dev libgtest-dev libtool \
+      python3-sip-dev doxygen python3-sphinx pkg-config \
+      python3-sphinx-rtd-theme \
       neovim \
       ros-rolling-joy-linux \
       tar \
