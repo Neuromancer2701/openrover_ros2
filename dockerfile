@@ -18,6 +18,7 @@ RUN apt-get update \
       ros-rolling-joy-linux \
       tar \
       wget \
+      libserial-dev \
   && apt-get clean
 
 RUN ( \

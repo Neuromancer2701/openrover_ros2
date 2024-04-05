@@ -7,9 +7,24 @@ endif()
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
-# uncomment the following section in order to fill in
-# further dependencies manually.
-# find_package(<dependency> REQUIRED)
+
+# libserial:
+# Following linking instructions from: https://github.com/crayzeewulf/libserial/blob/master/examples/example_project/CMakeLists.txt
+set(THREADS_HAVE_PTHREAD_ARG 1)
+find_package(Threads REQUIRED)
+
+# Include libserial for serial communication
+# Typical find_package() does not work for libserial, for reference see:
+# https://github.com/crayzeewulf/libserial/issues/113#issuecomment-432245159
+find_package(PkgConfig)
+pkg_check_modules(SERIAL libserial)
+
+
+
+
+
+
+
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
