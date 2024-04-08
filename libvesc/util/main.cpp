@@ -1,10 +1,9 @@
 
 
-#include "Vesc.h"
-#include <args.hxx>
-#include<iostream>
-#include <tuple>
-#include <utility>
+#include "libvesc/Vesc.h"
+#include "libvesc/args.hxx"
+#include <iostream>
+
 namespace {
     using std::cout;
     using std::ignore;
@@ -27,18 +26,18 @@ int main(int argc, char **argv)
     {
         parser.ParseCLI(argc, argv);
     }
-    catch (args::Help)
+    catch (const args::Help &)
     {
         std::cout << parser;
         return 0;
     }
-    catch (args::ParseError e)
+    catch (const args::ParseError &e)
     {
         std::cerr << e.what() << std::endl;
         std::cerr << parser;
         return 1;
     }
-    catch (args::ValidationError e)
+    catch (const args::ValidationError &e)
     {
         std::cerr << e.what() << std::endl;
         std::cerr << parser;

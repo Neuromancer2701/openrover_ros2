@@ -20,26 +20,29 @@ find_package(Threads REQUIRED)
 find_package(PkgConfig)
 pkg_check_modules(SERIAL libserial)
 
+include(CMakePackageConfigHelpers)
+
 include_directories(include
         ${SERIAL_INCLUDE_DIRS})
 
 file(GLOB VESC_SOURCES CONFIGURE_DEPENDS
         ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
+
 add_library(${PROJECT_NAME} SHARED ${VESC_SOURCES} )
 
 target_include_directories(${PROJECT_NAME}
         PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-        $<INSTALL_INTERFACE:include>
+        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+        $<INSTALL_INTERFACE:include>)
 
-        PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/libvesc
-        )
+# Reference: See libserial example project for integration with CMake
+target_include_directories(${PROJECT_NAME} PUBLIC ${SERIAL_INCLUDE_DIRS})
+target_link_libraries(${PROJECT_NAME} PUBLIC ${SERIAL_LDFLAGS} ${CMAKE_THREAD_LIBS_INIT})
 
 target_compile_options(${PROJECT_NAME}
         PRIVATE -Wall -Wextra -Wpedantic -Werror)
 
-
+add_subdirectory(util)
 ##############
 ## Install  ##
 ##############
