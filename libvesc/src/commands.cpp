@@ -17,7 +17,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
     */
 
-#include "commands.h"
+#include "libvesc/commands.h"
 
 using namespace vesc;
 
@@ -51,7 +51,7 @@ void Commands::processPacket(vector<uint8_t> &message) {
             char fw_minor = -1;
             string hw;
             vector<char> uuid;
-            bool isPaired = false;
+            //bool isPaired = false;
 
             if (message.size() >= 2) {
                 Packet::pop(message, fw_major);

@@ -17,7 +17,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "packet.h"
+#include "libvesc/packet.h"
 
 namespace {
     using std::numeric_limits;
@@ -139,10 +139,12 @@ void Packet::processData(vector<uint8_t> inputData) {
             case Length3byte:                       // 1, 2, 3 if Length Starts here
                 packetLength = castu32(inputData[1]) << u16;
                 offset++;
+                [[fallthrough]];
 
             case Length2byte:                       // 1, 2 if Length Starts here
                 packetLength |= castu32(inputData[1 + offset]) << u8;
                 offset++;
+                [[fallthrough]];
 
             case Length1byte:                       // 1  if Length Starts here
                 packetLength |= castu32(inputData[1 + offset]);

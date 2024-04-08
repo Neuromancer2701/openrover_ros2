@@ -21,7 +21,7 @@
 #define COMMANDS_H
 
 
-#include "packet.h"
+#include "libvesc/packet.h"
 
 namespace vesc {
 

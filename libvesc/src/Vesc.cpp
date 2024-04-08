@@ -4,11 +4,10 @@
 #include <string>
 #include <chrono>
 #include <thread>
-#include "Vesc.h"
-#include "utils.h"
-#include "SerialPort.h"
-#include "commands.h"
-#include <algorithm>
+
+#include "libvesc/Vesc.h"
+#include "libvesc/commands.h"
+
 
 namespace {
     using std::to_string;

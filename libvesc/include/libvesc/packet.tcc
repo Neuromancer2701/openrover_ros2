@@ -30,17 +30,20 @@ void Packet::append(vector<uint8_t> &message, T data) {
         case 4:
             message.push_back(castu8((data >> u24) & FF));
             message.push_back(castu8((data >> u16) & FF));
+            [[fallthrough]];
         case 2:
             message.push_back(castu8((data >> u8) & FF));
+            [[fallthrough]];
         case 1:
             message.push_back(castu8(data & FF));
+            break;
     }
 }
 
 template<class T>
 void Packet::pop(vector<uint8_t> &message, T &data) {
     data = 0x00;
-    const auto length{sizeof(T)};
+    const int length{sizeof(T)};
 
     for (int i = 0; i < length; ++i) {
         data |= (static_cast<T>(message[i]) & static_cast<T>(FF)) << static_cast<T>((length - 1 - i) * 8);

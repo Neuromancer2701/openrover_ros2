@@ -21,13 +21,13 @@
 #define PACKET_H
 
 
-#include "datatypes.h"
+#include "libvesc/datatypes.h"
 #include <vector>
 #include <algorithm>
 #include <cmath>
 #include <functional>
-#include <SerialPort.h>
-#include "utils.h"
+#include <libserial/SerialPort.h>
+#include "libvesc/utils.h"
 
 
 namespace {

@@ -4,7 +4,7 @@
 
 #include <string>
 #include <unordered_map>
-#include "commands.h"
+#include "libvesc/commands.h"
 
 namespace {
     using std::unordered_map;
