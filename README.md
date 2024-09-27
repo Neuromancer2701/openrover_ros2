@@ -2,7 +2,7 @@
 
 two support ros2 packages: lib-serial source code in libserial_vendor  and libVesc
 
-ros2_control plugin
+standalone lifecycle node that will be a diff_drive controller
 
 ----------
 docker setup instructions
