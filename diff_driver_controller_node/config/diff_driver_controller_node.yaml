@@ -1,0 +1,8 @@
+/diff_driver_controller_node/diff_driver_controller:
+
+  ros__parameters:
+    # Distance in meters between the two rear hub motors - on center
+    wheel_separation: 0.940
+
+    # Radius of Hub Motors
+    wheel_radius: 0.140

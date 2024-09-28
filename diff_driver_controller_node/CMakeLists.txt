@@ -1,6 +1,15 @@
 cmake_minimum_required(VERSION 3.8)
 project(diff_driver_controller_node)
 
+# Default to C++17
+set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+# For clang-tidy
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
@@ -13,6 +22,60 @@ find_package(rclcpp REQUIRED)
 find_package(rclcpp_lifecycle REQUIRED)
 find_package(lifecycle_msgs REQUIRED)
 
+include_directories(
+        include
+)
+
+add_library(diff_driver_controller SHARED
+        src/diff_driver_controller_node.cpp
+)
+
+target_compile_options(diff_driver_controller
+        PRIVATE
+        -Wall -Wextra -Wpedantic -Werror
+)
+
+set(DEPENDENCIES
+        rclcpp
+        std_msgs
+        geometry_msgs
+        rclcpp_lifecycle
+        lifecycle_msgs
+)
+
+ament_target_dependencies(diff_driver_controller ${DEPENDENCIES})
+
+add_executable(diff_driver_controller_node
+        src/diff_driver_controller_main.cpp)
+
+target_link_libraries(diff_driver_controller_node diff_driver_controller)
+
+target_compile_options(diff_driver_controller_node
+        PRIVATE
+        -Wall -Wextra -Wpedantic -Werror
+)
+
+install(DIRECTORY include/
+        DESTINATION include)
+
+install(TARGETS
+        diff_driver_controller
+
+        EXPORT export_${PROJECT_NAME}
+        ARCHIVE DESTINATION lib
+        LIBRARY DESTINATION lib
+        RUNTIME DESTINATION lib/${PROJECT_NAME})
+
+install(TARGETS diff_driver_controller_node
+        DESTINATION lib/${PROJECT_NAME})
+
+install(DIRECTORY launch
+        DESTINATION share/${PROJECT_NAME})
+
+install(DIRECTORY config
+        DESTINATION share/${PROJECT_NAME})
+
+
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   # the following line skips the linter which checks for copyrights
@@ -24,5 +87,10 @@ if(BUILD_TESTING)
   set(ament_cmake_cpplint_FOUND TRUE)
   ament_lint_auto_find_test_dependencies()
 endif()
+
+ament_export_include_directories( include )
+ament_export_dependencies( ${DEPENDENCIES} )
+ament_export_libraries( diff_driver_controller )
+ament_export_targets( export_${PROJECT_NAME} HAS_LIBRARY_TARGET)
 
 ament_package()

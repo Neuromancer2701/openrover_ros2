@@ -2,6 +2,7 @@ FROM ros:rolling
 
 # Distribution of ROS2
 ENV ROS_DISTRO=rolling
+#ENV ROS_DOMAIN_ID=100
 
 RUN apt update \
   && apt upgrade -y \
@@ -35,12 +36,8 @@ RUN ( \
 # Change the password 'password' to something more secure
 RUN useradd -m user && yes password | passwd user
 
-
 # Setup scripts
-RUN echo "source /opt/ros/$ROS_DISTRO/setup.bash" >> /home/user/.bashrc
-#RUN echo "./start-sshd.sh" >> /root/.bashrc
-# Provide passwordless sudo access to everyone
-RUN echo "ALL ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+RUN echo ". /opt/ros/$ROS_DISTRO/setup.sh" >> /home/user/.bashrc
 
 ENTRYPOINT ["/ros_entrypoint.sh"]
 CMD ["/usr/sbin/sshd", "-D", "-e", "-f", "/etc/ssh/sshd_config_test_clion"]
