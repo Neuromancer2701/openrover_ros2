@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project(diff_driver_controller_node)
+project(diff_drive_controller_node)
 
 # Default to C++17
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -21,16 +21,17 @@ find_package(geometry_msgs REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_lifecycle REQUIRED)
 find_package(lifecycle_msgs REQUIRED)
+find_package(vesc REQUIRED)
 
 include_directories(
         include
 )
 
-add_library(diff_driver_controller SHARED
-        src/diff_driver_controller_node.cpp
+add_library(diff_drive_controller SHARED
+        src/diff_drive_controller_node.cpp
 )
 
-target_compile_options(diff_driver_controller
+target_compile_options(diff_drive_controller
         PRIVATE
         -Wall -Wextra -Wpedantic -Werror
 )
@@ -41,16 +42,17 @@ set(DEPENDENCIES
         geometry_msgs
         rclcpp_lifecycle
         lifecycle_msgs
+        vesc
 )
 
-ament_target_dependencies(diff_driver_controller ${DEPENDENCIES})
+ament_target_dependencies(diff_drive_controller ${DEPENDENCIES})
 
-add_executable(diff_driver_controller_node
-        src/diff_driver_controller_main.cpp)
+add_executable(diff_drive_controller_node
+        src/diff_drive_controller_main.cpp)
 
-target_link_libraries(diff_driver_controller_node diff_driver_controller)
+target_link_libraries(diff_drive_controller_node diff_drive_controller)
 
-target_compile_options(diff_driver_controller_node
+target_compile_options(diff_drive_controller_node
         PRIVATE
         -Wall -Wextra -Wpedantic -Werror
 )
@@ -59,14 +61,14 @@ install(DIRECTORY include/
         DESTINATION include)
 
 install(TARGETS
-        diff_driver_controller
+        diff_drive_controller
 
         EXPORT export_${PROJECT_NAME}
         ARCHIVE DESTINATION lib
         LIBRARY DESTINATION lib
         RUNTIME DESTINATION lib/${PROJECT_NAME})
 
-install(TARGETS diff_driver_controller_node
+install(TARGETS diff_drive_controller_node
         DESTINATION lib/${PROJECT_NAME})
 
 install(DIRECTORY launch
@@ -90,7 +92,7 @@ endif()
 
 ament_export_include_directories( include )
 ament_export_dependencies( ${DEPENDENCIES} )
-ament_export_libraries( diff_driver_controller )
+ament_export_libraries( diff_drive_controller )
 ament_export_targets( export_${PROJECT_NAME} HAS_LIBRARY_TARGET)
 
 ament_package()

@@ -13,23 +13,24 @@ from launch_ros.events.lifecycle import ChangeState
 from launch.events import matches_action
 import lifecycle_msgs.msg
 from launch_ros.event_handlers import OnStateTransition
-from nav2_common.launch import RewrittenYaml
 
 
 def generate_launch_description():
-    package_name = "diff_driver_controller_node"
-    share_dir = get_package_share_directory(package_name)
+    package_name = "diff_drive_controller_node"
     node_namespace = LaunchConfiguration("__ns")
     node_name = LaunchConfiguration("__node")
     log_level = LaunchConfiguration("__log_level")
-    params_file = LaunchConfiguration("__params")
-    node_exe = "diff_driver_controller_node"
+    diff_drive_config = LaunchConfiguration("diff_drive_config")
+    node_exe = "diff_drive_controller_node"
 
-    default_params_file = os.path.join(
-        share_dir, "config", "diff_driver_controller_node.yaml"
-    )
-    configured_diff_drive_params = RewrittenYaml(
-        source_file=default_params_file
+    declare_diff_drive_config_cmd = DeclareLaunchArgument(
+        "diff_drive_config",
+        default_value=os.path.join(
+            get_package_share_directory(package_name),
+            "config",
+            "diff_drive_controller_node.yaml",
+        ),
+        description="Full path to the ROS2 parameters file to use for Diff Drive Controller configuration",
     )
 
     declare_ns = DeclareLaunchArgument(
@@ -48,13 +49,7 @@ def generate_launch_description():
         "__log_level", default_value="info", description="Log verbosity level"
     )
 
-    declare_params = DeclareLaunchArgument(
-        "__params",
-        default_value=configured_diff_drive_params,
-        description="Path to YAML-based node parameterization",
-    )
-
-    diff_driver_controller_node = LifecycleNode(
+    diff_drive_controller_node = LifecycleNode(
         package=package_name,
         executable=node_exe,
         namespace=node_namespace,
@@ -65,7 +60,7 @@ def generate_launch_description():
             "--",
         ],
         parameters=[
-            params_file,
+            diff_drive_config,
         ],
         name=node_name,
         output="screen",
@@ -75,14 +70,14 @@ def generate_launch_description():
 
     configure_event = EmitEvent(
         event=ChangeState(
-            lifecycle_node_matcher=matches_action(diff_driver_controller_node),
+            lifecycle_node_matcher=matches_action(diff_drive_controller_node),
             transition_id=lifecycle_msgs.msg.Transition.TRANSITION_CONFIGURE,
         )
     )
 
     activate_event = RegisterEventHandler(
         OnStateTransition(
-            target_lifecycle_node=diff_driver_controller_node,
+            target_lifecycle_node=diff_drive_controller_node,
             goal_state="inactive",
             entities=[
                 LogInfo(
@@ -91,7 +86,7 @@ def generate_launch_description():
                 EmitEvent(
                     event=ChangeState(
                         lifecycle_node_matcher=matches_action(
-                            diff_driver_controller_node
+                            diff_drive_controller_node
                         ),
                         transition_id=lifecycle_msgs.msg.Transition.TRANSITION_ACTIVATE,
                     )
@@ -105,9 +100,9 @@ def generate_launch_description():
             declare_ns,
             declare_nn,
             declare_log_level,
-            declare_params,
+            declare_diff_drive_config_cmd,
+            diff_drive_controller_node,
             configure_event,
-            activate_event,
-            diff_driver_controller_node,
+            activate_event
         ]
     )
