@@ -1,7 +1,7 @@
 
 
-#include <string_view>
 #include <string>
+#include <string_view>
 #include <chrono>
 #include <thread>
 
@@ -14,12 +14,18 @@ namespace {
     using std::this_thread::sleep_for;
     using std::chrono::milliseconds;
     using std::all_of;
-    using LibSerial::DataBuffer;
+    using LibSerial::DataBuffer; // Assuming DataBuffer is from LibSerial
 }
 
-using namespace vesc;
+// Using namespace for vesc members is fine within the .cpp file
+using namespace vesc; 
 
-inline void sleep_ms(long long millis) { sleep_for(milliseconds(millis)); }
+// Anonymous namespace for internal linkage helper functions
+namespace {
+    inline void sleep_ms(long long millis) { 
+        std::this_thread::sleep_for(std::chrono::milliseconds(millis)); 
+    }
+}
 
 Vesc::Vesc()
         : m_VescIDPacket(Commands::getVescIDpacket()), m_KeepAlivePacket(Commands::getKeepAlivepacket()),
@@ -41,37 +47,45 @@ bool Vesc::isFourWheelDrive() {
 }
 
 void Vesc::SetWheelsRPM(unordered_map<int, int> wheel_rpms) {
-    for (auto &[id, port]:wheel_ports) {
-        SerialPort vescPort(port);
-        if (wheel_rpms.find(id) != end(wheel_rpms)) {
-            vescPort.Write(Packet(COMM_SET_RPM, static_cast<unsigned>(wheel_rpms[id])).createPacket());
+    for (auto const& [id, port_str] : wheel_ports) { // Use const& for map iteration
+        if (auto it = wheel_rpms.find(id); it != wheel_rpms.end()) {
+            SerialPort vescPort(port_str); // port_str is std::string
+            if (vescPort.IsOpen()) { // Check if port opened successfully
+                vescPort.Write(Packet(COMM_SET_RPM, static_cast<unsigned>(it->second)).createPacket());
+                vescPort.Close(); // Close port after use
+            } else {
+                // LOG(WARNING) << "Could not open port: " << port_str << " for ID: " << id;
+            }
         } else {
-            //LOG(WARNING) << "ID Not Found input RPM set data: " << id ;
+            //LOG(WARNING) << "ID Not Found in input RPM set data: " << id ;
         }
-
-        vescPort.Close();
-        sleep_ms(5);
+        sleep_ms(5); // Consider if this sleep is needed per wheel or after all operations
     }
 }
 
 void Vesc::SetWheelsDuty(unordered_map<int, double> wheel_duty) {
-    for (auto &[id, port]:wheel_ports) {
-        SerialPort vescPort(port);
-        if (wheel_duty.find(id) != end(wheel_duty)) {
-            vescPort.Write(Packet(COMM_SET_DUTY, wheel_duty[id], 1e5).createPacket());
+    for (auto const& [id, port_str] : wheel_ports) { // Use const& for map iteration
+        if (auto it = wheel_duty.find(id); it != wheel_duty.end()) {
+            SerialPort vescPort(port_str); // port_str is std::string
+            if (vescPort.IsOpen()) { // Check if port opened successfully
+                vescPort.Write(Packet(COMM_SET_DUTY, it->second, 1e5).createPacket());
+                vescPort.Close(); // Close port after use
+            } else {
+                // LOG(WARNING) << "Could not open port: " << port_str << " for ID: " << id;
+            }
         } else {
-            //LOG(WARNING) << "ID Not Found input RPM set data: " << id ;
+            //LOG(WARNING) << "ID Not Found in input Duty set data: " << id ;
         }
-
-        vescPort.Close();
-        sleep_ms(5);
+        sleep_ms(5); // Consider if this sleep is needed per wheel or after all operations
     }
 }
 
 unordered_map<int, double> Vesc::GetWheelsRPM() {
     unordered_map<int, double> rpm_data;
-    for (auto &[id, port]:wheel_ports) {
-        if (SendAndReceive(m_RPMPacket, port)) {
+    for (auto const& [id, port_str] : wheel_ports) { // Use const&
+        // Pass port_str (std::string) to SendAndReceive, which now expects string_view
+        // std::string is implicitly convertible to std::string_view
+        if (SendAndReceive(m_RPMPacket, port_str)) { 
             rpm_data[id] = cmd.getMotorControllerData().rpm;
         }
         sleep_ms(5);
@@ -80,71 +94,87 @@ unordered_map<int, double> Vesc::GetWheelsRPM() {
 }
 
 void Vesc::FindandMapMotorControllers() {
-    SerialPort testport;
-    vector<string> serialPorts = testport.GetAvailableSerialPorts();
+    SerialPort testport; // Default constructor
+    auto serialPorts = testport.GetAvailableSerialPorts(); // Use auto
     vector<string> filteredPorts;
-    copy_if(begin(serialPorts), end(serialPorts), back_inserter(filteredPorts),
-            [](auto s) { return s.find("ttyACM") != std::string::npos; });
+    // Use std::ranges::copy_if with a projection in C++20 for more elegance if available and headers allow
+    // For now, keeping std::copy_if
+    std::copy_if(serialPorts.begin(), serialPorts.end(), std::back_inserter(filteredPorts),
+                 [](const std::string& s) { return s.find("ttyACM") != std::string::npos; });
 
-    for (auto &port:filteredPorts) {
-        if (SendAndReceive(m_VescIDPacket, port)) {
-            auto id = cmd.getMotorControllerData().vesc_id;
+    for (auto const& port_str : filteredPorts) { // Use const&
+        // Pass port_str (std::string) to SendAndReceive
+        if (SendAndReceive(m_VescIDPacket, port_str)) { 
+            auto id = cmd.getMotorControllerData().vesc_id; // Use auto
+            // Using a switch statement here is fine.
+            // Consider std::map or other structures if cases become very numerous or complex.
             switch (id) {
-
-                default:
-                case left_front:    //not implemented
-                case right_front:   //not implemented
+                // Cases can be simplified if left_front/right_front share logic with back wheels
+                // or if specific handling for them is added later.
+                default: // Catches unhandled IDs, could log a warning.
+                case left_front:    // Fall-through if behavior is same as left_back for now
+                case right_front:   // Fall-through if behavior is same as right_back for now
                 case left_back:
                 case right_back:
-                    wheel_ports[id] = port;
+                    // port_str is std::string, wheel_ports stores std::string
+                    wheel_ports[id] = port_str; 
                     wheel_found[id] = true;
                     break;
             }
         }
     }
-
 }
 
-bool Vesc::SendAndReceive(const Packet &packet, const string &port) {
-    SerialPort vescPort(port);
+// Private helper function, changed to accept std::string_view
+// This change is internal and does not affect the public API in Vesc.h
+bool Vesc::SendAndReceive(const Packet &packet, std::string_view port_sv) {
+    SerialPort vescPort(std::string(port_sv)); // SerialPort constructor might need std::string
     if (vescPort.IsOpen()) {
         vescPort.FlushIOBuffers();
         vescPort.Write(packet.createPacket());
-        sleep_ms(25);
+        sleep_ms(25); // Consider making delay configurable or dynamic
 
-        auto bytes{vescPort.GetNumberOfBytesAvailable()};
-        while (bytes < Packet::getminTotalPacketSize()) {
-            bytes = vescPort.GetNumberOfBytesAvailable();
-            sleep_ms(25);
+        auto bytes_available = vescPort.GetNumberOfBytesAvailable(); // Use auto
+        // Loop with a timeout or max attempts could be more robust
+        while (bytes_available < Packet::getminTotalPacketSize()) {
+            sleep_ms(25); // Re-check after delay
+            bytes_available = vescPort.GetNumberOfBytesAvailable();
         }
 
-        DataBuffer buffer;
-        vescPort.Read(buffer, bytes);
+        DataBuffer buffer; // Assuming DataBuffer is from LibSerial
+        vescPort.Read(buffer, bytes_available);
+        // vescPort.Close(); // Close port as soon as possible
 
-        Packet incoming;
+        Packet incoming; // Default constructor
         incoming.processData(buffer);
         if (incoming.isGoodPacket()) {
             cmd.processPacket(incoming.getPayload());
+            // vescPort.Close(); // Ensure port is closed on successful path too
             return true;
         }
+        // vescPort.Close(); // Ensure port is closed on packet error path
         return false;  // Packet is not good
     }
-    return false; // couldn't open  port
+    // LOG(WARNING) << "Could not open port: " << port_sv;
+    return false; // couldn't open port
 }
 
-bool Vesc::SendAndReceive(const Packet &packet, const int &port) {
-    if (wheel_ports.find(port) != end(wheel_ports)) {
-        return SendAndReceive(packet, wheel_ports[port]);
-    } else {
-        return false;  //could find specified port
+// This public API function signature remains unchanged (takes const int&)
+// It calls the internal SendAndReceive which now takes string_view
+bool Vesc::SendAndReceive(const Packet &packet, const int &port_id) {
+    if (auto it = wheel_ports.find(port_id); it != wheel_ports.end()) {
+        // it->second is std::string, which is compatible with std::string_view parameter
+        return SendAndReceive(packet, it->second); 
     }
+    // LOG(WARNING) << "Port ID not found in wheel_ports: " << port_id;
+    return false;  //could not find specified port
 }
 
 
 unordered_map<int, MC_VALUES> Vesc::GetSelectMotorData() {
     unordered_map<int, MC_VALUES> motor_data;
-    for (auto &[id, port]:wheel_ports) {
-        if (SendAndReceive(m_SelectmotorDataPacket, port)) {
+    for (auto const& [id, port_str] : wheel_ports) { // Use const&
+        if (SendAndReceive(m_SelectmotorDataPacket, port_str)) { // Pass std::string
             motor_data[id] = cmd.getMotorControllerData();
         }
         sleep_ms(5);
@@ -155,8 +185,8 @@ unordered_map<int, MC_VALUES> Vesc::GetSelectMotorData() {
 
 unordered_map<int, MC_VALUES> Vesc::GetAllMotorData() {
     unordered_map<int, MC_VALUES> motor_data;
-    for (auto &[id, port]:wheel_ports) {
-        if (SendAndReceive(m_AllMotorDataPacket, port)) {
+    for (auto const& [id, port_str] : wheel_ports) { // Use const&
+        if (SendAndReceive(m_AllMotorDataPacket, port_str)) { // Pass std::string
             motor_data[id] = cmd.getMotorControllerData();
         }
         sleep_ms(5);

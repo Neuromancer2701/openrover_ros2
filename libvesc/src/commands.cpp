@@ -29,58 +29,65 @@ Commands::Commands()
 
 }
 
-bool Commands::setSendCan(bool sendCan, int id) {
+bool Commands::setSendCan(bool sendCan, int32_t id) { // Explicitly use int32_t for clarity if it matches header
     if (id >= 0) {
         mCanId = id;
         mSendCan = sendCan;
         return true;
     }
-
+    // No else needed as it returns false if condition is not met.
     return false;
 }
 
 void Commands::processPacket(vector<uint8_t> &message) {
+    // It's important that Packet::pop handles empty 'message' gracefully or it's checked before.
+    if (message.empty()) {
+        // Or handle error appropriately
+        return; 
+    }
 
-    unsigned char id = 0;
+    uint8_t id = 0; // Use fixed-size integer type for clarity
     Packet::pop(message, id);
 
-    switch (id) {
+    switch (static_cast<COMM_PACKET_ID>(id)) { // Cast id to enum type for switch
         case COMM_FW_VERSION: {
             mTimeoutFwVer = 0;
-            char fw_major = -1;
-            char fw_minor = -1;
-            string hw;
-            vector<char> uuid;
-            //bool isPaired = false;
+            // Using auto for type deduction where types are clear from context or initialization
+            auto fw_major = int8_t{-1}; // Assuming char might be signed/unsigned based on platform.
+            auto fw_minor = int8_t{-1}; // Using int8_t for explicit size and signedness.
+            // string hw; // hw is not used, commented out.
+            // vector<char> uuid; // uuid is not used, commented out.
+            // bool isPaired = false; // isPaired is not used, commented out.
 
             if (message.size() >= 2) {
                 Packet::pop(message, fw_major);
                 Packet::pop(message, fw_minor);
-                //hw = message.vbPopFrontString();
+                // hw = message.vbPopFrontString(); // This method and similar ones are commented out in original
             }
 
-            if (message.size() >= 12) {
-                //uuid = message.left(12);
-                //message.erase(12);
-            }
-
-            if (message.size() >= 1) {
-                //isPaired = message.vbPopFrontInt8();
-            }
-
+            // The following blocks for uuid and isPaired are commented out in the original code.
+            // If they were active, similar modernization would apply.
+            // if (message.size() >= 12) {
+            //     //uuid = message.left(12);
+            //     //message.erase(12);
+            // }
+            // if (message.size() >= 1) {
+            //     //isPaired = message.vbPopFrontInt8();
+            // }
         }
-            break;
+            break; // Ensure break is present for each case
 
         case COMM_GET_VALUES:
         case COMM_GET_VALUES_SELECTIVE: {
             mTimeoutValues = 0;
 
-            unsigned mask = 0xFFFFFFFF;
-            if (id == COMM_GET_VALUES_SELECTIVE) {
+            uint32_t mask = 0xFFFFFFFF; // Use fixed-size integer type
+            if (static_cast<COMM_PACKET_ID>(id) == COMM_GET_VALUES_SELECTIVE) {
                 Packet::pop(message, mask);
             }
 
-            if ((mask & MC_TEMP_MOS) == MC_TEMP_MOS) {
+            // Using if statements with consistent mask checking style
+            if ((mask & MC_TEMP_MOS) == MC_TEMP_MOS) { // Enum values are already powers of 2
                 motorControllerData.temp_mos = Packet::popDouble16(message, 1e1);
             }
             if ((mask & MC_TEMP_MOTOR) == MC_TEMP_MOTOR) {
@@ -102,6 +109,7 @@ void Commands::processPacket(vector<uint8_t> &message) {
                 motorControllerData.duty_now = Packet::popDouble16(message, 1e3);
             }
             if ((mask & MC_RPM) == MC_RPM) {
+                // Assuming popDouble32 returns a type convertible to double (motorControllerData.rpm type)
                 motorControllerData.rpm = Packet::popDouble32(message, 1e0);
             }
             if ((mask & MC_V_IN) == MC_V_IN) {
@@ -120,45 +128,42 @@ void Commands::processPacket(vector<uint8_t> &message) {
                 motorControllerData.watt_hours_charged = Packet::popDouble32(message, 1e4);
             }
             if ((mask & MC_TACH) == MC_TACH) {
-                Packet::pop(message, motorControllerData.tachometer);
+                Packet::pop(message, motorControllerData.tachometer); // Assuming Packet::pop deduces type correctly
             }
             if ((mask & MC_TACH_ABS) == MC_TACH_ABS) {
                 Packet::pop(message, motorControllerData.tachometer_abs);
             }
             if ((mask & MC_FAULT_CODE) == MC_FAULT_CODE) {
-                unsigned char temp = 0;
-                Packet::pop(message, temp);
-                motorControllerData.fault_code = static_cast<mc_fault_code>(temp);
+                uint8_t temp_fault_code = 0; // Use fixed-size type
+                Packet::pop(message, temp_fault_code);
+                motorControllerData.fault_code = static_cast<mc_fault_code>(temp_fault_code);
                 motorControllerData.fault_str = faultToStr(motorControllerData.fault_code);
             }
 
-            if (message.size() >= 4) {
-                if ((mask & MC_POSITION) == MC_POSITION) {
-                    motorControllerData.position = Packet::popDouble32(message, 1e6);
-                }
-            } else {
-                motorControllerData.position = -1.0;
+            // Check message size before attempting to pop more data
+            if (message.size() >= 4 && (mask & MC_POSITION) == MC_POSITION) {
+                 motorControllerData.position = Packet::popDouble32(message, 1e6);
+            } else if ((mask & MC_POSITION) == MC_POSITION) { // If mask requests it but not enough data
+                motorControllerData.position = -1.0; // Default or error value
             }
 
-            if (message.size() >= 1) {
-                if ((mask & MC_VESC_ID) == MC_VESC_ID) {
-                    unsigned char temp = 0;
-                    Packet::pop(message, temp);
-                    motorControllerData.vesc_id = static_cast<int>(temp);
-                }
-            } else {
-                motorControllerData.vesc_id = 255;
+
+            if (message.size() >= 1 && (mask & MC_VESC_ID) == MC_VESC_ID) {
+                uint8_t temp_vesc_id = 0; // Use fixed-size type
+                Packet::pop(message, temp_vesc_id);
+                motorControllerData.vesc_id = static_cast<int>(temp_vesc_id); // vesc_id is int in struct
+            } else if ((mask & MC_VESC_ID) == MC_VESC_ID) { // If mask requests it but not enough data
+                motorControllerData.vesc_id = 255; // Default or error value
             }
 
-            if (message.size() >= 6) {
-                if ((mask & MC_TEMP_MOS_123) == MC_TEMP_MOS_123) {
-                    motorControllerData.temp_mos_1 = Packet::popDouble16(message, 1e1);
-                    motorControllerData.temp_mos_2 = Packet::popDouble16(message, 1e1);
-                    motorControllerData.temp_mos_3 = Packet::popDouble16(message, 1e1);
-                }
+
+            if (message.size() >= 6 && (mask & MC_TEMP_MOS_123) == MC_TEMP_MOS_123) {
+                motorControllerData.temp_mos_1 = Packet::popDouble16(message, 1e1);
+                motorControllerData.temp_mos_2 = Packet::popDouble16(message, 1e1);
+                motorControllerData.temp_mos_3 = Packet::popDouble16(message, 1e1);
             }
         }
-            break;
+            break; // Ensure break is present for each case
 #if 0
             case COMM_GET_IMU_DATA:
                 {
@@ -254,11 +259,15 @@ void Commands::setCurrentBrake(double current, SerialPort vescPort) {
     vescPort.Write(Packet(COMM_SET_CURRENT_BRAKE, current, 1e3).createPacket());
 }
 
-void Commands::setRpm(int rpm, SerialPort vescPort) {
-    vescPort.Write(Packet(COMM_SET_RPM, static_cast<unsigned>(rpm)).createPacket());
+void Commands::setRpm(int32_t rpm, SerialPort vescPort) { // Explicitly use int32_t if it matches header
+    // The cast to unsigned might be platform-dependent or specific to Packet constructor.
+    // Ensuring rpm is not negative before casting to unsigned is safer if Packet expects non-negative.
+    // However, if VESC protocol uses negative RPM for direction, this cast is part of the protocol.
+    vescPort.Write(Packet(COMM_SET_RPM, static_cast<uint32_t>(rpm)).createPacket());
 }
 
 void Commands::setPos(double pos, SerialPort vescPort) {
+    // Ensure scale factor 1e6 is appropriate for the precision required by VESC for position.
     vescPort.Write(Packet(COMM_SET_POS, pos, 1e6).createPacket());
 }
 
@@ -274,24 +283,36 @@ void Commands::sendAlive(SerialPort vescPort) {
     vescPort.Write(Packet(COMM_ALIVE).createPacket());
 }
 
-void Commands::getValuesSelective(unsigned int mask, SerialPort vescPort) {
+void Commands::getValuesSelective(uint32_t mask, SerialPort vescPort) { // Use fixed-size type
     vescPort.Write(Packet(COMM_GET_VALUES_SELECTIVE, mask).createPacket());
 }
 
-void Commands::getImuData(unsigned int mask, SerialPort vescPort) {
+void Commands::getImuData(uint32_t mask, SerialPort vescPort) { // Use fixed-size type
     if (mTimeoutImuData > 0) {
-        return;
+        return; // Already waiting for a response or timeout active
     }
 
-    mTimeoutImuData = mTimeoutCount;
+    mTimeoutImuData = mTimeoutCount; // Reset timeout
 
-    vescPort.Write(Packet(COMM_GET_IMU_DATA, static_cast<unsigned short>(mask)).createPacket());
+    // The cast to unsigned short (uint16_t) might truncate the mask if it's larger.
+    // This should match what the VESC firmware expects for this command.
+    // If VESC expects uint16_t, then this is correct.
+    vescPort.Write(Packet(COMM_GET_IMU_DATA, static_cast<uint16_t>(mask)).createPacket());
 }
 
-string Commands::faultToStr(mc_fault_code fault) {
+// This function returns std::string, so std::string_view is not directly applicable for return type
+// without changing API. Parameter is an enum, so no change there.
+// Using std::string_view for the return and having callers convert to std::string
+// could be a C++17+ optimization if this function is hot and strings are short-lived.
+// However, for simplicity and to avoid breaking existing uses that expect std::string, keep as is.
+std::string Commands::faultToStr(mc_fault_code fault) {
+    // Using a switch statement here is clear and efficient for enums.
+    // No fallthroughs are intended.
     switch (fault) {
         case FAULT_CODE_NONE:
-            return "FAULT_CODE_NONE";
+            return "FAULT_CODE_NONE"; // Potentially make these string_literals (C++14/17) or string_view (C++17)
+                                      // if performance is critical and to avoid std::string allocations.
+                                      // For now, returning string literals is fine, they convert to std::string.
         case FAULT_CODE_OVER_VOLTAGE:
             return "FAULT_CODE_OVER_VOLTAGE";
         case FAULT_CODE_UNDER_VOLTAGE:
@@ -329,10 +350,13 @@ string Commands::faultToStr(mc_fault_code fault) {
         case FAULT_CODE_UNBALANCED_CURRENTS:
             return "FAULT_CODE_UNBALANCED_CURRENTS";
         default:
-            return "Unknown fault";
+            // Consider logging an unknown fault code for debugging purposes.
+            return "Unknown fault"; // Or perhaps "UNKNOWN_FAULT_CODE_" + std::to_string(static_cast<int>(fault));
     }
 }
 
+// Returns a reference to a member variable. No significant modernization applicable here
+// beyond ensuring MC_VALUES itself is modern if it were defined in this scope.
 MC_VALUES &Commands::getMotorControllerData() {
     return motorControllerData;
 }
