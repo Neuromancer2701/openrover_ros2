@@ -21,9 +21,10 @@ namespace vesc {
     class Vesc {
     public:
         /**
-         * @brief Default constructor for the Vesc class.
+         * @brief Constructor for the Vesc class.
+         * @param logger The rclcpp logger instance.
          */
-        Vesc();
+        Vesc(rclcpp::Logger logger);
 
         /**
          * @brief Default virtual destructor.
@@ -150,6 +151,7 @@ namespace vesc {
          * @brief Maps wheel IDs to a boolean indicating if the wheel has been found/connected.
          */
         unordered_map<int, bool> wheel_found;
+        rclcpp::Logger logger_;
     };
 }
 
