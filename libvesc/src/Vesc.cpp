@@ -5,6 +5,8 @@
 #include <chrono>
 #include <thread>
 
+#include "rclcpp/rclcpp.hpp"
+
 #include "libvesc/Vesc.h"
 #include "libvesc/commands.h"
 
@@ -27,8 +29,8 @@ namespace {
     }
 }
 
-Vesc::Vesc()
-        : m_VescIDPacket(Commands::getVescIDpacket()), m_KeepAlivePacket(Commands::getKeepAlivepacket()),
+Vesc::Vesc(rclcpp::Logger logger)
+        : logger_(logger), m_VescIDPacket(Commands::getVescIDpacket()), m_KeepAlivePacket(Commands::getKeepAlivepacket()),
           m_AllMotorDataPacket(Commands::getMotorpacket()), m_SelectmotorDataPacket(Commands::getSelectMotorpacket()),
           m_RPMPacket(Commands::getMotorRPMpacket()), wheel_found({{left_back,   false},
                                                                    {left_front,  false},
@@ -54,10 +56,10 @@ void Vesc::SetWheelsRPM(unordered_map<int, int> wheel_rpms) {
                 vescPort.Write(Packet(COMM_SET_RPM, static_cast<unsigned>(it->second)).createPacket());
                 vescPort.Close(); // Close port after use
             } else {
-                // LOG(WARNING) << "Could not open port: " << port_str << " for ID: " << id;
+                RCLCPP_WARN(logger_, "Could not open port: %s for ID: %d", port_str.c_str(), id);
             }
         } else {
-            //LOG(WARNING) << "ID Not Found in input RPM set data: " << id ;
+            RCLCPP_WARN(logger_, "ID Not Found in input RPM set data: %d", id);
         }
         sleep_ms(5); // Consider if this sleep is needed per wheel or after all operations
     }
@@ -71,10 +73,10 @@ void Vesc::SetWheelsDuty(unordered_map<int, double> wheel_duty) {
                 vescPort.Write(Packet(COMM_SET_DUTY, it->second, 1e5).createPacket());
                 vescPort.Close(); // Close port after use
             } else {
-                // LOG(WARNING) << "Could not open port: " << port_str << " for ID: " << id;
+                RCLCPP_WARN(logger_, "Could not open port: %s for ID: %d", port_str.c_str(), id);
             }
         } else {
-            //LOG(WARNING) << "ID Not Found in input Duty set data: " << id ;
+            RCLCPP_WARN(logger_, "ID Not Found in input Duty set data: %d", id);
         }
         sleep_ms(5); // Consider if this sleep is needed per wheel or after all operations
     }
@@ -155,7 +157,7 @@ bool Vesc::SendAndReceive(const Packet &packet, std::string_view port_sv) {
         // vescPort.Close(); // Ensure port is closed on packet error path
         return false;  // Packet is not good
     }
-    // LOG(WARNING) << "Could not open port: " << port_sv;
+    RCLCPP_WARN(logger_, "Could not open port: %s", std::string(port_sv).c_str());
     return false; // couldn't open port
 }
 
@@ -166,7 +168,7 @@ bool Vesc::SendAndReceive(const Packet &packet, const int &port_id) {
         // it->second is std::string, which is compatible with std::string_view parameter
         return SendAndReceive(packet, it->second); 
     }
-    // LOG(WARNING) << "Port ID not found in wheel_ports: " << port_id;
+    RCLCPP_WARN(logger_, "Port ID not found in wheel_ports: %d", port_id);
     return false;  //could not find specified port
 }
 
