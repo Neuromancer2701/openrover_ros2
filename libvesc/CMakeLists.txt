@@ -28,7 +28,9 @@ include_directories(include
 file(GLOB VESC_SOURCES CONFIGURE_DEPENDS
         ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
 
+set(CMAKE_CXX_STANDARD 20)
 add_library(${PROJECT_NAME} SHARED ${VESC_SOURCES} )
+target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_20)
 
 target_include_directories(${PROJECT_NAME}
         PUBLIC
